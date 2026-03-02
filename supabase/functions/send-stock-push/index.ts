@@ -59,7 +59,7 @@ serve(async (req) => {
 
         // Notify administrators (or all subscribed users for now)
         const { data: subscriptions, error: subError } = await supabaseAdmin
-            .from('push_subscriptions')
+            .from('stock_push_subscriptions')
             .select('*')
 
         if (subError) throw subError
@@ -102,7 +102,7 @@ serve(async (req) => {
                     return { endpoint: sub.endpoint, success: true }
                 } catch (err: any) {
                     if (err.statusCode === 410 || err.statusCode === 404) {
-                        await supabaseAdmin.from('push_subscriptions').delete().eq('id', sub.id)
+                        await supabaseAdmin.from('stock_push_subscriptions').delete().eq('id', sub.id)
                     }
                     throw err
                 }

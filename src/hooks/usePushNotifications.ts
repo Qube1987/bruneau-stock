@@ -50,7 +50,7 @@ export function usePushNotifications() {
 
             const sub = subscription.toJSON();
 
-            const { error } = await supabase.from('push_subscriptions').upsert({
+            const { error } = await supabase.from('stock_push_subscriptions').upsert({
                 user_id: user.id,
                 user_email: user.email!,
                 endpoint: sub.endpoint!,
@@ -81,7 +81,7 @@ export function usePushNotifications() {
             if (subscription) {
                 await subscription.unsubscribe();
 
-                const { error } = await supabase.from('push_subscriptions')
+                const { error } = await supabase.from('stock_push_subscriptions')
                     .delete()
                     .eq('endpoint', subscription.endpoint);
 
