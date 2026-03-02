@@ -145,6 +145,15 @@ export async function createProduct(product: Omit<Product, 'id' | 'created_at'>)
 }
 
 export async function updateProduct(id: string, updates: Partial<Product>) {
+  // Fetch current product state before updates to check thresholds
+  const { data: currentProduct, error: fetchError } = await supabase
+    .from('stock_products')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
   const { data, error } = await supabase
     .from('stock_products')
     .update(updates)
@@ -153,6 +162,31 @@ export async function updateProduct(id: string, updates: Partial<Product>) {
     .single();
 
   if (error) throw error;
+
+  // Check thresholds for notifications
+  const pushLocations = [
+    { key: 'depot_quantity', name: 'Dépôt' },
+    { key: 'paul_truck_quantity', name: 'Camion Paul' },
+    { key: 'quentin_truck_quantity', name: 'Camion Quentin' }
+  ];
+
+  for (const loc of pushLocations) {
+    const prevQty = (currentProduct as any)[loc.key] as number;
+    const newQty = (updates as any)[loc.key] as number | undefined;
+
+    if (newQty !== undefined && prevQty >= currentProduct.min_quantity && newQty < currentProduct.min_quantity) {
+      supabase.functions.invoke('send-stock-push', {
+        body: {
+          product_id: id,
+          product_name: currentProduct.name,
+          new_quantity: newQty,
+          min_quantity: currentProduct.min_quantity,
+          location: loc.name
+        }
+      }).catch(err => console.error('Failed to invoke push notification:', err));
+    }
+  }
+
   return data;
 }
 
@@ -236,4 +270,29 @@ export async function processMovement(
     });
 
   if (movementError) throw movementError;
+
+  // Check thresholds for notifications
+  const pushLocations = [
+    { key: 'depot_quantity', name: 'Dépôt' },
+    { key: 'paul_truck_quantity', name: 'Camion Paul' },
+    { key: 'quentin_truck_quantity', name: 'Camion Quentin' }
+  ];
+
+  for (const loc of pushLocations) {
+    const prevQty = (product as any)[loc.key] as number;
+    const newQty = (updates as any)[loc.key] as number | undefined;
+
+    if (newQty !== undefined && prevQty >= product.min_quantity && newQty < product.min_quantity) {
+      // Trigger Edge Function for push notification
+      supabase.functions.invoke('send-stock-push', {
+        body: {
+          product_id: productId,
+          product_name: product.name,
+          new_quantity: newQty,
+          min_quantity: product.min_quantity,
+          location: loc.name
+        }
+      }).catch(err => console.error('Failed to invoke push notification:', err));
+    }
+  }
 }

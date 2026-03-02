@@ -1,6 +1,8 @@
-import { Home, Package, ClipboardList, FileDown, Upload, Plus } from 'lucide-react';
+import { Home, Package, ClipboardList, FileDown, Upload, Plus, Bell } from 'lucide-react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
+import { PushSettings } from './PushSettings';
 
 const navigation = [
   { name: 'Accueil', href: '/', icon: Home },
@@ -11,6 +13,7 @@ const navigation = [
 
 export function Layout() {
   const location = useLocation();
+  const [showPushSettings, setShowPushSettings] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -35,7 +38,14 @@ export function Layout() {
                 </Link>
               ))}
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setShowPushSettings(true)}
+                className="p-2 text-gray-400 hover:text-[#E72C63] transition-colors rounded-full hover:bg-red-50"
+                title="Paramètres de notifications"
+              >
+                <Bell className="h-5 w-5" />
+              </button>
               <img
                 src="/stock-android-chrome-512x512_(1).png"
                 alt="Stock Management"
@@ -49,6 +59,10 @@ export function Layout() {
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <Outlet />
       </main>
+
+      {showPushSettings && (
+        <PushSettings onClose={() => setShowPushSettings(false)} />
+      )}
     </div>
   );
 }

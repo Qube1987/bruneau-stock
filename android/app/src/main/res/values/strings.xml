@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Bruneau Stock</string>
+    <string name="title_activity_main">Bruneau Stock</string>
+    <string name="package_name">com.bruneau.stock</string>
+    <string name="custom_url_scheme">com.bruneau.stock</string>
+</resources>
