@@ -1,0 +1,4 @@
+project_id = "rzxisqsdsiiuwaixnneo"
+
+[functions.send-stock-push]
+verify_jwt = false
