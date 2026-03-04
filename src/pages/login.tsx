@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -14,6 +13,8 @@ export function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !password) return;
+
     setError('');
     setIsLoading(true);
 
@@ -34,71 +35,100 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-[#29235C]">
-            Connexion
-          </h2>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <p className="text-sm text-red-700">{error}</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="max-w-md w-full">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="p-6 sm:p-10">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className="flex justify-center mb-6">
+                <img
+                  src="/BRUNEAU_PROTECTION_LOGO_SansDate_QUADRI.png"
+                  alt="Bruneau Protection"
+                  className="h-12 sm:h-16 w-auto object-contain"
+                />
+              </div>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Stock Bruneau Protection</h1>
+              <p className="text-sm sm:text-base text-gray-600">Connectez-vous pour accéder à votre espace</p>
             </div>
-          )}
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email" className="sr-only">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={cn(
-                  'appearance-none rounded-none relative block w-full px-3 py-2 border',
-                  'border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md',
-                  'focus:outline-none focus:ring-[#E72C63] focus:border-[#E72C63] focus:z-10 sm:text-sm'
-                )}
-                placeholder="Email"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Mot de passe
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={cn(
-                  'appearance-none rounded-none relative block w-full px-3 py-2 border',
-                  'border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md',
-                  'focus:outline-none focus:ring-[#E72C63] focus:border-[#E72C63] focus:z-10 sm:text-sm'
-                )}
-                placeholder="Mot de passe"
-              />
-            </div>
-          </div>
 
-          <div>
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Connexion...' : 'Se connecter'}
-            </Button>
+            {/* Error Message */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <p className="text-red-700 text-sm font-medium leading-relaxed">{error}</p>
+              </div>
+            )}
+
+            {/* Login Form */}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">
+                  Adresse email
+                </label>
+                <div className="relative group">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-[#29235C] transition-colors">
+                    <Mail size={20} />
+                  </div>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#E72C63]/50 focus:border-transparent focus:bg-white transition-all min-h-[52px] text-gray-900 placeholder:text-gray-400"
+                    placeholder="votre@email.com"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">
+                  Mot de passe
+                </label>
+                <div className="relative group">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-[#29235C] transition-colors">
+                    <Lock size={20} />
+                  </div>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#E72C63]/50 focus:border-transparent focus:bg-white transition-all min-h-[52px] text-gray-900 placeholder:text-gray-400"
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={isLoading || !email || !password}
+                  className="w-full bg-[#29235C] text-white py-4 px-6 rounded-xl hover:bg-[#1f1a4d] active:scale-[0.98] focus:ring-2 focus:ring-[#29235C]/50 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2 transition-all font-bold shadow-lg shadow-[#29235C]/20 min-h-[56px]"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <span>Connexion en cours...</span>
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="h-5 w-5" />
+                      <span>Se connecter</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+
+            {/* Footer */}
+            <div className="mt-10 pt-6 border-t border-gray-100 text-center">
+              <p className="text-xs sm:text-sm text-gray-400 font-medium">
+                Accès réservé aux utilisateurs autorisés
+              </p>
+            </div>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

@@ -1,8 +1,9 @@
-import { Home, Package, ClipboardList, FileDown, Upload, Plus, Bell } from 'lucide-react';
+import { Home, Package, ClipboardList, FileDown, Upload, Plus, Bell, User, ChevronDown, LogOut } from 'lucide-react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { PushSettings } from './PushSettings';
+import { useAuth } from '@/lib/auth';
 
 const navigation = [
   { name: 'Accueil', href: '/', icon: Home },
@@ -13,44 +14,115 @@ const navigation = [
 
 export function Layout() {
   const location = useLocation();
+  const { user, signOut } = useAuth();
   const [showPushSettings, setShowPushSettings] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm">
+      <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 justify-between">
-            <div className="flex">
+          <div className="flex h-16 justify-between items-center">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <img
+                  src="/BRUNEAU_PROTECTION_LOGO_SansDate_QUADRI.png"
+                  alt="Bruneau Protection"
+                  className="h-8 w-auto"
+                />
+                <span className="text-xl font-bold text-[#29235C] hidden sm:block">
+                  STK
+                </span>
+              </div>
+
+              <div className="hidden sm:flex items-center gap-1">
+                {navigation.map((item) => (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={cn(
+                      'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                      location.pathname === item.href
+                        ? 'bg-[#29235C]/10 text-[#29235C]'
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    )}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.name}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowPushSettings(true)}
+                className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                title="Notifications Push"
+              >
+                <Bell className="h-5 w-5 text-gray-700" />
+              </button>
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center gap-2 p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  title="Menu utilisateur"
+                >
+                  <User className="h-5 w-5 text-gray-700" />
+                  <ChevronDown className={`h-4 w-4 text-gray-700 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                    <div className="px-4 py-3 border-b border-gray-200">
+                      <p className="text-sm text-gray-900 font-medium">{user?.email}</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        signOut();
+                        setIsDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>Déconnexion</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile navigation */}
+          <div className="flex sm:hidden overflow-x-auto no-scrollbar py-2 -mx-4 px-4">
+            <div className="flex space-x-2 min-w-max">
               {navigation.map((item) => (
                 <Link
                   key={item.name}
                   to={item.href}
                   className={cn(
-                    'inline-flex items-center px-4 text-sm font-medium',
-                    'border-b-2 transition-colors hover:border-gray-300 hover:text-gray-700',
+                    'flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap',
                     location.pathname === item.href
-                      ? 'border-[#E72C63] text-[#E72C63]'
-                      : 'border-transparent text-gray-500'
+                      ? 'bg-[#29235C]/10 text-[#29235C]'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                   )}
                 >
-                  <item.icon className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">{item.name}</span>
+                  <item.icon className="h-4 w-4" />
+                  <span>{item.name}</span>
                 </Link>
               ))}
-            </div>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setShowPushSettings(true)}
-                className="p-2 text-gray-400 hover:text-[#E72C63] transition-colors rounded-full hover:bg-red-50"
-                title="Paramètres de notifications"
-              >
-                <Bell className="h-5 w-5" />
-              </button>
-              <img
-                src="/stock-android-chrome-512x512_(1).png"
-                alt="Stock Management"
-                className="h-10 w-auto"
-              />
             </div>
           </div>
         </div>
