@@ -190,6 +190,14 @@ export async function updateProduct(id: string, updates: Partial<Product>) {
   return data;
 }
 
+export async function incrementUsageCount(id: string) {
+  const { error } = await supabase.rpc('increment_product_usage', { product_id: id });
+  if (error) {
+    // Non-blocking: log but don't throw so the quantity update still succeeds
+    console.error('Failed to increment usage count:', error);
+  }
+}
+
 export async function createMovement(movement: Omit<Movement, 'id' | 'created_at'>) {
   const { data, error } = await supabase
     .from('stock_movements')
