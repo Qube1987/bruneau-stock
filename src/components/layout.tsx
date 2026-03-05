@@ -1,9 +1,11 @@
 import { Home, Package, ClipboardList, FileDown, Upload, Plus, Bell, User, ChevronDown, LogOut } from 'lucide-react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useState, useRef, useEffect } from 'react';
 import { PushSettings } from './PushSettings';
 import { useAuth } from '@/lib/auth';
+import { getOutOfStockProducts } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 
 const navigation = [
   { name: 'Accueil', href: '/', icon: Home },
@@ -14,9 +16,11 @@ const navigation = [
 
 export function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [showPushSettings, setShowPushSettings] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [outOfStockCount, setOutOfStockCount] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,6 +32,28 @@ export function Layout() {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Fetch out-of-stock products count
+  useEffect(() => {
+    const fetchOutOfStock = async () => {
+      try {
+        const products = await getOutOfStockProducts();
+        setOutOfStockCount(products.length);
+      } catch (err) {
+        console.error('Error fetching out of stock products:', err);
+      }
+    };
+    fetchOutOfStock();
+
+    const channel = supabase
+      .channel('stock-badge')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'stock_products' }, () => {
+        fetchOutOfStock();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   return (
@@ -68,11 +94,25 @@ export function Layout() {
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowPushSettings(true)}
-                className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                title="Notifications Push"
+                onClick={() => navigate('/export')}
+                className="relative p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                title="Produits en rupture"
               >
-                <Bell className="h-5 w-5 text-gray-700" />
+                <Bell className={`h-5 w-5 ${outOfStockCount > 0 ? 'text-[#29235C]' : 'text-gray-700'}`} />
+                {outOfStockCount > 0 && (
+                  <span
+                    className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-[11px] font-bold shadow-sm"
+                    style={{ animation: 'badgePulse 2s ease-in-out infinite' }}
+                  >
+                    {outOfStockCount > 99 ? '99+' : outOfStockCount}
+                  </span>
+                )}
+                <style>{`
+                  @keyframes badgePulse {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.1); }
+                  }
+                `}</style>
               </button>
               <div className="relative" ref={dropdownRef}>
                 <button
