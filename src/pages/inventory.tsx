@@ -6,7 +6,7 @@ import { CameraScanner } from '@/components/ui/camera-scanner';
 import { cn } from '@/lib/utils';
 import { getCategories, getProducts, updateProduct, getSubcategories } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { Camera } from 'lucide-react';
+import { Camera, X } from 'lucide-react';
 import type { Category, ProductWithDetails, Subcategory } from '@/types';
 
 type StockLocation = 'depot_quantity' | 'paul_truck_quantity' | 'quentin_truck_quantity';
@@ -65,18 +65,18 @@ export function InventoryPage() {
 
   const handleCategoryChange = (categoryId: string, checked: boolean) => {
     setSelectedCategories(prev => {
-      const newCategories = checked 
+      const newCategories = checked
         ? [...prev, categoryId]
         : prev.filter(id => id !== categoryId);
-      
+
       if (!checked) {
-        setSelectedSubcategories(prev => 
-          prev.filter(subId => 
+        setSelectedSubcategories(prev =>
+          prev.filter(subId =>
             subcategories.find(sub => sub.id === subId)?.category_id !== categoryId
           )
         );
       }
-      
+
       return newCategories;
     });
   };
@@ -188,8 +188,9 @@ export function InventoryPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Tapez le nom d'un article, une description, une catégorie..."
                 className={cn(
-                  'block w-full rounded-md border-gray-300 pl-10 pr-3 py-2 shadow-sm',
-                  'focus:border-[#E72C63] focus:ring-[#E72C63] sm:text-sm'
+                  'block w-full rounded-md border-gray-300 pl-10 py-2 shadow-sm',
+                  'focus:border-[#E72C63] focus:ring-[#E72C63] sm:text-sm',
+                  searchTerm ? 'pr-8' : 'pr-3'
                 )}
               />
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -207,6 +208,16 @@ export function InventoryPage() {
                   />
                 </svg>
               </div>
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="absolute inset-y-0 right-0 flex items-center pr-2 text-gray-400 hover:text-gray-600 transition-colors"
+                  title="Effacer la recherche"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
             <Button
               variant="outline"
@@ -277,8 +288,8 @@ export function InventoryPage() {
               {searchTerm
                 ? `Aucun produit trouvé pour "${searchTerm}"`
                 : selectedCategories.length > 0
-                ? 'Aucun produit trouvé pour les catégories sélectionnées'
-                : 'Aucun produit trouvé'}
+                  ? 'Aucun produit trouvé pour les catégories sélectionnées'
+                  : 'Aucun produit trouvé'}
             </p>
           ) : (
             <div className="divide-y divide-gray-200">

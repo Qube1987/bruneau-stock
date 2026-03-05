@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Camera, Search, Minus, Plus, TrendingUp } from 'lucide-react';
+import { Camera, Search, Minus, Plus, TrendingUp, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CameraScanner } from '@/components/ui/camera-scanner';
 import { cn } from '@/lib/utils';
@@ -162,13 +162,24 @@ export function HomePage() {
                 onChange={(e) => handleSearch(e.target.value)}
                 placeholder="Tapez le nom ou la référence..."
                 className={cn(
-                  'block w-full rounded-md border-gray-300 pl-10 pr-3 py-2 shadow-sm',
-                  'focus:border-[#E72C63] focus:ring-[#E72C63] sm:text-sm'
+                  'block w-full rounded-md border-gray-300 pl-10 py-2 shadow-sm',
+                  'focus:border-[#E72C63] focus:ring-[#E72C63] sm:text-sm',
+                  searchTerm ? 'pr-8' : 'pr-3'
                 )}
               />
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                 <Search className="h-5 w-5 text-gray-400" />
               </div>
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => handleSearch('')}
+                  className="absolute inset-y-0 right-0 flex items-center pr-2 text-gray-400 hover:text-gray-600 transition-colors"
+                  title="Effacer la recherche"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
             <Button
               variant="outline"

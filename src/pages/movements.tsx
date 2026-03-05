@@ -6,47 +6,47 @@ import { CameraScanner } from '@/components/ui/camera-scanner';
 import { cn } from '@/lib/utils';
 import { getCategories, getProducts, getSubcategories, processMovement } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { Minus, Plus, Truck, Package, Users, Building2, ArrowRight, Camera } from 'lucide-react';
+import { Minus, Plus, Truck, Package, Users, Building2, ArrowRight, Camera, X } from 'lucide-react';
 import type { Category, ProductWithDetails, Subcategory, MovementType } from '@/types';
 
 const MOVEMENT_TYPES = [
-  { 
-    value: 'SUPPLIER_TO_DEPOT', 
+  {
+    value: 'SUPPLIER_TO_DEPOT',
     label: 'Fournisseur → Dépôt',
     shortLabel: 'Fournisseur',
     icon: Package,
     color: 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200'
   },
-  { 
-    value: 'DEPOT_TO_PAUL', 
+  {
+    value: 'DEPOT_TO_PAUL',
     label: 'Dépôt → Camion Paul',
     shortLabel: 'Vers Paul',
     icon: Truck,
     color: 'bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200'
   },
-  { 
-    value: 'DEPOT_TO_QUENTIN', 
+  {
+    value: 'DEPOT_TO_QUENTIN',
     label: 'Dépôt → Camion Quentin',
     shortLabel: 'Vers Quentin',
     icon: Truck,
     color: 'bg-purple-100 text-purple-700 border-purple-300 hover:bg-purple-200'
   },
-  { 
-    value: 'PAUL_TO_CLIENT', 
+  {
+    value: 'PAUL_TO_CLIENT',
     label: 'Camion Paul → Client',
     shortLabel: 'Paul → Client',
     icon: Users,
     color: 'bg-orange-100 text-orange-700 border-orange-300 hover:bg-orange-200'
   },
-  { 
-    value: 'QUENTIN_TO_CLIENT', 
+  {
+    value: 'QUENTIN_TO_CLIENT',
     label: 'Camion Quentin → Client',
     shortLabel: 'Quentin → Client',
     icon: Users,
     color: 'bg-pink-100 text-pink-700 border-pink-300 hover:bg-pink-200'
   },
-  { 
-    value: 'DEPOT_TO_CLIENT', 
+  {
+    value: 'DEPOT_TO_CLIENT',
     label: 'Dépôt → Client',
     shortLabel: 'Dépôt → Client',
     icon: Building2,
@@ -100,7 +100,7 @@ export default function MovementsPage() {
   );
 
   const processMovementMutation = useMutation({
-    mutationFn: ({ productId, movementType, quantity, comment }: { 
+    mutationFn: ({ productId, movementType, quantity, comment }: {
       productId: string;
       movementType: MovementType;
       quantity: number;
@@ -113,18 +113,18 @@ export default function MovementsPage() {
 
   const handleCategoryChange = (categoryId: string, checked: boolean) => {
     setSelectedCategories(prev => {
-      const newCategories = checked 
+      const newCategories = checked
         ? [...prev, categoryId]
         : prev.filter(id => id !== categoryId);
-      
+
       if (!checked) {
-        setSelectedSubcategories(prev => 
-          prev.filter(subId => 
+        setSelectedSubcategories(prev =>
+          prev.filter(subId =>
             subcategories.find(sub => sub.id === subId)?.category_id !== categoryId
           )
         );
       }
-      
+
       return newCategories;
     });
   };
@@ -227,12 +227,12 @@ export default function MovementsPage() {
 
       <div className="rounded-lg bg-white p-6 shadow-sm">
         <h1 className="mb-6 text-2xl font-bold text-[#29235C]">Mouvements de Stock</h1>
-        
+
         <div className="mb-6">
           <label className="mb-4 block text-sm font-medium text-gray-700">
             Type de Mouvement
           </label>
-          
+
           {/* Affichage du mouvement sélectionné */}
           {selectedMovementType && (
             <div className="mb-4 p-3 bg-[#E72C63]/10 border border-[#E72C63] rounded-lg">
@@ -263,7 +263,7 @@ export default function MovementsPage() {
               </div>
             </div>
           )}
-          
+
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {MOVEMENT_TYPES.map((type) => {
               const IconComponent = type.icon;
@@ -276,8 +276,8 @@ export default function MovementsPage() {
                   className={cn(
                     'flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left',
                     'focus:outline-none focus:ring-2 focus:ring-[#E72C63] focus:ring-offset-2',
-                    isSelected 
-                      ? 'border-[#E72C63] bg-[#E72C63]/10 text-[#E72C63]' 
+                    isSelected
+                      ? 'border-[#E72C63] bg-[#E72C63]/10 text-[#E72C63]'
                       : type.color
                   )}
                 >
@@ -310,8 +310,9 @@ export default function MovementsPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Tapez le nom d'un article, une description, une catégorie..."
                 className={cn(
-                  'block w-full rounded-md border-gray-300 pl-10 pr-3 py-2 shadow-sm',
-                  'focus:border-[#E72C63] focus:ring-[#E72C63] sm:text-sm'
+                  'block w-full rounded-md border-gray-300 pl-10 py-2 shadow-sm',
+                  'focus:border-[#E72C63] focus:ring-[#E72C63] sm:text-sm',
+                  searchTerm ? 'pr-8' : 'pr-3'
                 )}
               />
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -329,6 +330,16 @@ export default function MovementsPage() {
                   />
                 </svg>
               </div>
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="absolute inset-y-0 right-0 flex items-center pr-2 text-gray-400 hover:text-gray-600 transition-colors"
+                  title="Effacer la recherche"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
             <Button
               variant="outline"
@@ -459,7 +470,7 @@ export default function MovementsPage() {
                   >
                     <Minus className="h-3 w-3" />
                   </Button>
-                  
+
                   <input
                     type="number"
                     min="0"
@@ -471,7 +482,7 @@ export default function MovementsPage() {
                       'focus:border-[#E72C63] focus:ring-[#E72C63]'
                     )}
                   />
-                  
+
                   <Button
                     size="sm"
                     variant="secondary"
@@ -489,8 +500,8 @@ export default function MovementsPage() {
             {searchTerm
               ? `Aucun produit trouvé pour "${searchTerm}"`
               : selectedCategories.length > 0
-              ? 'Aucun produit trouvé pour les catégories sélectionnées'
-              : 'Sélectionnez des catégories pour voir les produits'}
+                ? 'Aucun produit trouvé pour les catégories sélectionnées'
+                : 'Sélectionnez des catégories pour voir les produits'}
           </p>
         )}
       </div>
