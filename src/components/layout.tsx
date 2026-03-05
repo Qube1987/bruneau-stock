@@ -1,12 +1,10 @@
-import { Home, Package, ClipboardList, FileDown, Plus, Bell, BellOff, User, ChevronDown, LogOut, AlertTriangle, X, Settings } from 'lucide-react';
+import { Home, Package, ClipboardList, FileDown, Plus, Bell, BellOff, User, ChevronDown, LogOut, AlertTriangle, X, Settings, CheckCheck, Check, Clock } from 'lucide-react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useState, useRef, useEffect } from 'react';
 import { PushSettings } from './PushSettings';
 import { useAuth } from '@/lib/auth';
-import { getOutOfStockProducts } from '@/lib/api';
-import { supabase } from '@/lib/supabase';
-import type { Product } from '@/types';
+import { useStockNotifications } from '@/hooks/useStockNotifications';
 
 const navigation = [
   { name: 'Accueil', href: '/', icon: Home },
@@ -21,12 +19,18 @@ export function Layout() {
   const { user, signOut } = useAuth();
   const [showPushSettings, setShowPushSettings] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [outOfStockCount, setOutOfStockCount] = useState(0);
   const [showNotifPanel, setShowNotifPanel] = useState(false);
-  const [outOfStockProducts, setOutOfStockProducts] = useState<Product[]>([]);
-  const [loadingNotifs, setLoadingNotifs] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notifPanelRef = useRef<HTMLDivElement>(null);
+
+  const {
+    notifications,
+    unreadCount,
+    outOfStockCount,
+    loading: loadingNotifs,
+    markAsRead,
+    markAllAsRead,
+  } = useStockNotifications();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -42,63 +46,38 @@ export function Layout() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const fetchOutOfStock = async () => {
-    try {
-      const products = await getOutOfStockProducts();
-      setOutOfStockCount(products.length);
-      return products;
-    } catch (err) {
-      console.error('Error fetching out of stock products:', err);
-      return [];
-    }
-  };
-
-  const fetchOutOfStockList = async () => {
-    setLoadingNotifs(true);
-    try {
-      const products = await getOutOfStockProducts();
-      setOutOfStockProducts(products.slice(0, 20));
-      setOutOfStockCount(products.length);
-    } catch (err) {
-      console.error('Error fetching out of stock list:', err);
-    } finally {
-      setLoadingNotifs(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchOutOfStock();
-
-    const channel = supabase
-      .channel('stock-badge')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'stock_products' }, () => {
-        fetchOutOfStock();
-        if (showNotifPanel) fetchOutOfStockList();
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [showNotifPanel]);
-
   const handleBellClick = () => {
-    if (!showNotifPanel) {
-      fetchOutOfStockList();
-    }
     setShowNotifPanel(!showNotifPanel);
   };
 
-  const getStockLevel = (product: Product) => {
+  const getStockLevel = (notif: { depotQuantity: number; paulTruckQuantity: number; quentinTruckQuantity: number; minQuantity: number }) => {
     const locations: string[] = [];
-    if (product.depot_quantity < product.min_quantity) {
-      locations.push(`Dépôt: ${product.depot_quantity}`);
+    if (notif.depotQuantity < notif.minQuantity) {
+      locations.push(`Dépôt: ${notif.depotQuantity}`);
     }
-    if (product.paul_truck_quantity < product.min_quantity) {
-      locations.push(`Paul: ${product.paul_truck_quantity}`);
+    if (notif.paulTruckQuantity < notif.minQuantity) {
+      locations.push(`Paul: ${notif.paulTruckQuantity}`);
     }
-    if (product.quentin_truck_quantity < product.min_quantity) {
-      locations.push(`Quentin: ${product.quentin_truck_quantity}`);
+    if (notif.quentinTruckQuantity < notif.minQuantity) {
+      locations.push(`Quentin: ${notif.quentinTruckQuantity}`);
     }
     return locations.join(' • ');
+  };
+
+  const formatTimeAgo = (timestamp: string) => {
+    const now = new Date();
+    const date = new Date(timestamp);
+    const diffMs = now.getTime() - date.getTime();
+    const diffMin = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMin < 1) return "À l'instant";
+    if (diffMin < 60) return `Il y a ${diffMin}min`;
+    if (diffHours < 24) return `Il y a ${diffHours}h`;
+    if (diffDays === 1) return 'Hier';
+    if (diffDays < 7) return `Il y a ${diffDays}j`;
+    return date.toLocaleDateString('fr-FR');
   };
 
   return (
@@ -143,15 +122,15 @@ export function Layout() {
                 <button
                   onClick={handleBellClick}
                   className="relative p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                  title="Produits en rupture"
+                  title="Notifications de ruptures"
                 >
-                  <Bell className={`h-5 w-5 ${outOfStockCount > 0 ? 'text-[#29235C]' : 'text-gray-700'}`} />
-                  {outOfStockCount > 0 && (
+                  <Bell className={`h-5 w-5 ${unreadCount > 0 ? 'text-[#29235C]' : 'text-gray-700'}`} />
+                  {unreadCount > 0 && (
                     <span
                       className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-[11px] font-bold shadow-sm"
                       style={{ animation: 'badgePulse 2s ease-in-out infinite' }}
                     >
-                      {outOfStockCount > 99 ? '99+' : outOfStockCount}
+                      {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                   )}
                   <style>{`
@@ -175,15 +154,24 @@ export function Layout() {
                     {/* Header */}
                     <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-red-50 to-white">
                       <div className="flex items-center gap-2">
-                        <AlertTriangle className="h-5 w-5 text-red-600" />
-                        <h3 className="text-base font-bold text-gray-900">Ruptures de stock</h3>
-                        {outOfStockCount > 0 && (
+                        <Bell className="h-5 w-5 text-[#29235C]" />
+                        <h3 className="text-base font-bold text-gray-900">Notifications</h3>
+                        {unreadCount > 0 && (
                           <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-red-500 text-white text-xs font-bold">
-                            {outOfStockCount}
+                            {unreadCount}
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-1">
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={markAllAsRead}
+                            className="p-2 text-gray-400 hover:text-[#29235C] hover:bg-[#29235C]/10 rounded-lg transition-colors"
+                            title="Tout marquer comme lu"
+                          >
+                            <CheckCheck className="h-4 w-4" />
+                          </button>
+                        )}
                         <button
                           onClick={() => {
                             setShowPushSettings(true);
@@ -203,65 +191,122 @@ export function Layout() {
                       </div>
                     </div>
 
-                    {/* List */}
-                    <div className="max-h-[420px] overflow-y-auto overscroll-contain">
+                    {/* Info bar: total ruptures count */}
+                    {outOfStockCount > 0 && (
+                      <div className="px-5 py-2.5 bg-red-50/50 border-b border-red-100/50 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
+                          <span className="text-xs font-medium text-red-700">
+                            {outOfStockCount} produit{outOfStockCount > 1 ? 's' : ''} en rupture actuellement
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            navigate('/export');
+                            setShowNotifPanel(false);
+                          }}
+                          className="text-xs font-semibold text-[#29235C] hover:text-[#1f1a4d] transition-colors"
+                        >
+                          Voir tout →
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Notification List */}
+                    <div className="max-h-[380px] overflow-y-auto overscroll-contain">
                       {loadingNotifs ? (
                         <div className="flex items-center justify-center py-12">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#29235C]"></div>
                         </div>
-                      ) : outOfStockProducts.length === 0 ? (
+                      ) : notifications.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
                           <div className="p-4 bg-gray-50 rounded-full mb-4">
                             <BellOff className="h-8 w-8 text-gray-300" />
                           </div>
-                          <p className="text-sm font-medium text-gray-500">Aucune rupture de stock</p>
-                          <p className="text-xs text-gray-400 mt-1">Tous les produits sont approvisionnés !</p>
+                          <p className="text-sm font-medium text-gray-500">Aucune nouvelle notification</p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            Les nouvelles ruptures de stock apparaîtront ici
+                          </p>
                         </div>
                       ) : (
                         <div className="divide-y divide-gray-50">
-                          {outOfStockProducts.map((product) => (
-                            <button
-                              key={product.id}
-                              onClick={() => {
-                                navigate('/export');
-                                setShowNotifPanel(false);
-                              }}
-                              className="w-full text-left px-5 py-3.5 hover:bg-red-50/50 transition-all duration-150"
+                          {notifications.map((notif) => (
+                            <div
+                              key={notif.id}
+                              className={`w-full text-left px-5 py-3.5 transition-all duration-150 ${notif.read
+                                  ? 'bg-white hover:bg-gray-50'
+                                  : 'bg-red-50/60 hover:bg-red-50 border-l-[3px] border-l-red-500'
+                                }`}
                             >
                               <div className="flex gap-3">
-                                <div className="flex-shrink-0 mt-0.5">
-                                  <Package className={`h-5 w-5 ${product.depot_quantity === 0 ? 'text-red-500' : 'text-orange-500'}`} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-start justify-between gap-2">
-                                    <p className="text-sm font-semibold text-gray-900 truncate">
-                                      {product.name}
-                                    </p>
-                                    <span className="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">
-                                      Min: {product.min_quantity}
-                                    </span>
+                                <button
+                                  onClick={() => {
+                                    navigate('/export');
+                                    setShowNotifPanel(false);
+                                  }}
+                                  className="flex gap-3 flex-1 min-w-0 text-left"
+                                >
+                                  <div className="flex-shrink-0 mt-0.5">
+                                    <Package className={`h-5 w-5 ${notif.depotQuantity === 0 ? 'text-red-500' : 'text-orange-500'}`} />
                                   </div>
-                                  {(product.marque || product.fournisseur) && (
-                                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
-                                      {[product.marque, product.fournisseur].filter(Boolean).join(' — ')}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <p className={`text-sm leading-snug ${!notif.read ? 'font-semibold text-gray-900' : 'font-medium text-gray-600'}`}>
+                                        🆕 Nouvelle rupture
+                                      </p>
+                                      {!notif.read && (
+                                        <span className="flex-shrink-0 mt-1 w-2 h-2 rounded-full bg-red-500"></span>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-gray-700 mt-0.5 font-medium truncate">
+                                      {notif.productName}
                                     </p>
-                                  )}
-                                  <div className="flex items-center gap-1 mt-1.5">
-                                    <AlertTriangle className="h-3 w-3 text-red-400" />
-                                    <span className="text-[11px] font-medium text-red-500">
-                                      {getStockLevel(product)}
-                                    </span>
+                                    {(notif.marque || notif.fournisseur) && (
+                                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
+                                        {[notif.marque, notif.fournisseur].filter(Boolean).join(' — ')}
+                                      </p>
+                                    )}
+                                    <div className="flex items-center gap-1 mt-1.5">
+                                      <AlertTriangle className="h-3 w-3 text-red-400" />
+                                      <span className="text-[11px] font-medium text-red-500">
+                                        {getStockLevel(notif)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-1 mt-1">
+                                      <Clock className="h-3 w-3 text-gray-400" />
+                                      <span className="text-[11px] text-gray-400">
+                                        {formatTimeAgo(notif.timestamp)}
+                                      </span>
+                                      <span className="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">
+                                        Min: {notif.minQuantity}
+                                      </span>
+                                    </div>
                                   </div>
-                                </div>
+                                </button>
+                                {/* Mark as read button */}
+                                {!notif.read && (
+                                  <div className="flex-shrink-0 flex items-start">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        markAsRead(notif.id);
+                                      }}
+                                      className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                      title="Marquer comme lu"
+                                    >
+                                      <Check className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
-                            </button>
+                            </div>
                           ))}
                         </div>
                       )}
                     </div>
 
                     {/* Footer */}
-                    {outOfStockProducts.length > 0 && (
+                    {notifications.length > 0 && (
                       <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/50">
                         <button
                           onClick={() => {
