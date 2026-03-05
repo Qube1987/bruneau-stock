@@ -191,10 +191,24 @@ export async function updateProduct(id: string, updates: Partial<Product>) {
 }
 
 export async function incrementUsageCount(id: string) {
-  const { error } = await supabase.rpc('increment_product_usage', { product_id: id });
+  const { error } = await supabase.rpc('increment_product_usage', { p_id: id });
   if (error) {
-    // Non-blocking: log but don't throw so the quantity update still succeeds
-    console.error('Failed to increment usage count:', error);
+    console.warn('RPC increment_product_usage failed, trying read-then-write:', error.message);
+    // Fallback: read current value then increment
+    const { data, error: readError } = await supabase
+      .from('stock_products')
+      .select('usage_count')
+      .eq('id', id)
+      .single();
+    if (!readError && data) {
+      const { error: updateError } = await supabase
+        .from('stock_products')
+        .update({ usage_count: (data.usage_count ?? 0) + 1 })
+        .eq('id', id);
+      if (updateError) {
+        console.error('Fallback increment also failed:', updateError.message);
+      }
+    }
   }
 }
 
