@@ -56,15 +56,6 @@ export function useStockNotifications() {
 
             // Get the previously known rupture product IDs
             const knownRuptureIds: string[] = loadFromStorage(KNOWN_RUPTURES_KEY, []);
-
-            // On first ever load (no known ruptures stored yet), just record current state
-            // without creating notifications for everything already in rupture
-            if (!initialLoadDone.current && knownRuptureIds.length === 0 && outOfStockProducts.length > 0) {
-                const currentIds = outOfStockProducts.map((p: Product) => p.id);
-                saveToStorage(KNOWN_RUPTURES_KEY, currentIds);
-                initialLoadDone.current = true;
-                return;
-            }
             initialLoadDone.current = true;
 
             // Find NEW ruptures (products that are in rupture now but weren't known before)
